@@ -1,38 +1,32 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Estrutura do nó
-typedef struct No {
+// Definição da estrutura da árvore
+typedef struct no {
     int chave;
-    int contador;           // Contador de ocorrências da chave
-    struct No* esq;
-    struct No* dir;
-} No, *PonteiroNo;
+    int contador;
+    struct no* esq;
+    struct no* dir;
+} NO, *PONT;
 
 // Protótipos das funções
-void inicializar(PonteiroNo* raiz);
-PonteiroNo criarNo(int valor);
-PonteiroNo inserir(PonteiroNo raiz, int valor);
-PonteiroNo removerUmaOcorrencia(PonteiroNo raiz, int valor);
-PonteiroNo removerTodasOcorrencias(PonteiroNo raiz, int valor);
-PonteiroNo buscar(PonteiroNo raiz, int valor);
-void exibirInOrder(PonteiroNo raiz);
-int contarNos(PonteiroNo raiz);
-int contarTotalElementos(PonteiroNo raiz);
-int kEsimoMenor(PonteiroNo raiz, int k);
-void imprimirIntervalo(PonteiroNo raiz, int min, int max);
-PonteiroNo ancestralComumMinimo(PonteiroNo raiz, int val1, int val2);
+void inicializar(PONT* raiz);
+PONT criarNo(int valor);
+PONT inserir(PONT raiz, int valor);
+PONT buscar(PONT raiz, int valor);
+void exibirInOrder(PONT raiz);
+PONT removerUmaOcorrencia(PONT raiz, int valor);
+PONT removerTodasOcorrencias(PONT raiz, int valor);
+PONT encontrarMinimo(PONT raiz);
 
-//------------------------------------------------------------------------------
-// 1) Inicializar
-void inicializar(PonteiroNo* raiz) {
+// Função para inicializar a árvore
+void inicializar(PONT* raiz) {
     *raiz = NULL;
 }
 
-//------------------------------------------------------------------------------
-// 2) Criar nó
-PonteiroNo criarNo(int valor) {
-    PonteiroNo novo = (PonteiroNo) malloc(sizeof(No));
+// Função para criar um novo nó
+PONT criarNo(int valor) {
+    PONT novo = (PONT) malloc(sizeof(NO));
     if (novo) {
         novo->chave = valor;
         novo->contador = 1;
@@ -42,130 +36,143 @@ PonteiroNo criarNo(int valor) {
     return novo;
 }
 
-//------------------------------------------------------------------------------
-// 3) Buscar
-PonteiroNo buscar(PonteiroNo raiz, int valor) {
-    if (!raiz || raiz->chave == valor)
+// Função para buscar um valor na árvore
+PONT buscar(PONT raiz, int valor) {
+    if (raiz == NULL || raiz->chave == valor)
         return raiz;
     if (valor < raiz->chave)
         return buscar(raiz->esq, valor);
     return buscar(raiz->dir, valor);
 }
 
-//------------------------------------------------------------------------------
-// 4) Inserir
-PonteiroNo inserir(PonteiroNo raiz, int valor) {
-    if (!raiz) return criarNo(valor);
+// Função para inserir um valor na árvore
+PONT inserir(PONT raiz, int valor) {
+    if (raiz == NULL) return criarNo(valor);
+
     if (valor < raiz->chave)
         raiz->esq = inserir(raiz->esq, valor);
     else if (valor > raiz->chave)
         raiz->dir = inserir(raiz->dir, valor);
     else
-        raiz->contador++;
+        raiz->contador++; // Incrementa a contagem se o valor já existir
+
     return raiz;
 }
 
-//------------------------------------------------------------------------------
-// 5) Remover UMA ocorrência
-PonteiroNo removerUmaOcorrencia(PonteiroNo raiz, int valor) {
-    if (!raiz) return NULL;
+// Função auxiliar para encontrar o nó com o menor valor
+PONT encontrarMinimo(PONT raiz) {
+    while (raiz->esq != NULL)
+        raiz = raiz->esq;
+    return raiz;
+}
+
+// Função para remover uma única ocorrência de um valor
+PONT removerUmaOcorrencia(PONT raiz, int valor) {
+    if (raiz == NULL) return NULL;
+
     if (valor < raiz->chave)
         raiz->esq = removerUmaOcorrencia(raiz->esq, valor);
     else if (valor > raiz->chave)
         raiz->dir = removerUmaOcorrencia(raiz->dir, valor);
     else {
         if (raiz->contador > 1) {
-            raiz->contador--;
+            raiz->contador--; // Apenas reduz a contagem
             return raiz;
         }
-        if (!raiz->esq) {
-            PonteiroNo temp = raiz->dir;
+
+        if (raiz->esq == NULL) {
+            PONT temp = raiz->dir;
             free(raiz);
             return temp;
-        } else if (!raiz->dir) {
-            PonteiroNo temp = raiz->esq;
+        } else if (raiz->dir == NULL) {
+            PONT temp = raiz->esq;
             free(raiz);
             return temp;
         }
-        PonteiroNo temp = raiz->dir;
-        while (temp->esq)
-            temp = temp->esq;
+
+        PONT temp = encontrarMinimo(raiz->dir);
         raiz->chave = temp->chave;
         raiz->contador = temp->contador;
+        temp->contador = 1;
         raiz->dir = removerUmaOcorrencia(raiz->dir, temp->chave);
     }
     return raiz;
 }
 
-//------------------------------------------------------------------------------
-// 6) Remover TODAS ocorrências
-PonteiroNo removerTodasOcorrencias(PonteiroNo raiz, int valor) {
-    PonteiroNo noEncontrado = buscar(raiz, valor);
-    while (noEncontrado)
-        raiz = removerUmaOcorrencia(raiz, valor);
+// Função para remover todas as ocorrências de um valor
+PONT removerTodasOcorrencias(PONT raiz, int valor) {
+    if (raiz == NULL) return NULL;
+
+    if (valor < raiz->chave)
+        raiz->esq = removerTodasOcorrencias(raiz->esq, valor);
+    else if (valor > raiz->chave)
+        raiz->dir = removerTodasOcorrencias(raiz->dir, valor);
+    else {
+        if (raiz->esq == NULL) {
+            PONT temp = raiz->dir;
+            free(raiz);
+            return temp;
+        } else if (raiz->dir == NULL) {
+            PONT temp = raiz->esq;
+            free(raiz);
+            return temp;
+        }
+
+        PONT temp = encontrarMinimo(raiz->dir);
+        raiz->chave = temp->chave;
+        raiz->contador = temp->contador;
+        temp->contador = 1;
+        raiz->dir = removerTodasOcorrencias(raiz->dir, temp->chave);
+    }
     return raiz;
 }
 
-//------------------------------------------------------------------------------
-// 7) Exibir InOrder
-void exibirInOrder(PonteiroNo raiz) {
-    if (raiz) {
+// Função para exibir a árvore em ordem crescente
+void exibirInOrder(PONT raiz) {
+    if (raiz != NULL) {
         exibirInOrder(raiz->esq);
-        for (int i = 0; i < raiz->contador; i++)
-            printf("%d ", raiz->chave);
+        printf("%d(%d) ", raiz->chave, raiz->contador);
         exibirInOrder(raiz->dir);
     }
 }
 
-//------------------------------------------------------------------------------
-// 8) Contar nós distintos
-int contarNos(PonteiroNo raiz) {
-    if (!raiz) return 0;
-    return 1 + contarNos(raiz->esq) + contarNos(raiz->dir);
-}
+int main() {
+    PONT raiz;
+    inicializar(&raiz);
 
-//------------------------------------------------------------------------------
-// 9) Contar total de elementos
-int contarTotalElementos(PonteiroNo raiz) {
-    if (!raiz) return 0;
-    return raiz->contador + contarTotalElementos(raiz->esq) + contarTotalElementos(raiz->dir);
-}
+    // Inserção de elementos
+    raiz = inserir(raiz, 50);
+    raiz = inserir(raiz, 30);
+    raiz = inserir(raiz, 70);
+    raiz = inserir(raiz, 20);
+    raiz = inserir(raiz, 40);
+    raiz = inserir(raiz, 60);
+    raiz = inserir(raiz, 80);
+    raiz = inserir(raiz, 70);
 
-//------------------------------------------------------------------------------
-// 10) k-ésimo menor
-int kEsimoMenor(PonteiroNo raiz, int k) {
-    if (!raiz) return -1;
-    int esquerda = contarTotalElementos(raiz->esq);
-    if (k <= esquerda)
-        return kEsimoMenor(raiz->esq, k);
-    if (k <= esquerda + raiz->contador)
-        return raiz->chave;
-    return kEsimoMenor(raiz->dir, k - esquerda - raiz->contador);
-}
+    printf("Árvore em ordem: ");
+    exibirInOrder(raiz);
+    printf("\n");
 
-//------------------------------------------------------------------------------
-// 11) Imprimir Intervalo
-void imprimirIntervalo(PonteiroNo raiz, int min, int max) {
-    if (!raiz) return;
-    if (min < raiz->chave)
-        imprimirIntervalo(raiz->esq, min, max);
-    if (min <= raiz->chave && raiz->chave <= max)
-        for (int i = 0; i < raiz->contador; i++)
-            printf("%d ", raiz->chave);
-    if (max > raiz->chave)
-        imprimirIntervalo(raiz->dir, min, max);
-}
+    // Teste de busca
+    int busca = 70;
+    PONT encontrado = buscar(raiz, busca);
+    if (encontrado)
+        printf("Valor %d encontrado na árvore com frequência %d.\n", busca, encontrado->contador);
+    else
+        printf("Valor %d não encontrado.\n", busca);
 
-//------------------------------------------------------------------------------
-// 12) Ancestral Comum Mínimo
-PonteiroNo ancestralComumMinimo(PonteiroNo raiz, int val1, int val2) {
-    while (raiz) {
-        if (val1 < raiz->chave && val2 < raiz->chave)
-            raiz = raiz->esq;
-        else if (val1 > raiz->chave && val2 > raiz->chave)
-            raiz = raiz->dir;
-        else
-            return raiz;
-    }
-    return NULL;
+    // Removendo uma ocorrência do 70
+    raiz = removerUmaOcorrencia(raiz, 70);
+    printf("Após remover uma ocorrência de 70: ");
+    exibirInOrder(raiz);
+    printf("\n");
+
+    // Removendo todas as ocorrências do 70
+    raiz = removerTodasOcorrencias(raiz, 70);
+    printf("Após remover todas as ocorrências de 70: ");
+    exibirInOrder(raiz);
+    printf("\n");
+
+    return 0;
 }
